@@ -48,7 +48,7 @@ def iteration_implementation_face_splitting_product(phi: np.ndarray, psi: Option
     """
     if psi is None:
         # Shallow copy
-        phi = psi
+        psi = phi
 
     assert psi.shape[0] == phi.shape[0], ("Both sets of wave functions should be defined for the same number of grid "
                                           "points")
@@ -89,7 +89,7 @@ def face_splitting_product_single_loop(phi: np.ndarray, psi: Optional[np.ndarray
     """
     if psi is None:
         # Shallow copy
-        phi = psi
+        psi = phi
 
     assert psi.shape[0] == phi.shape[0], ("Both sets of wave functions should be defined for the same number of grid "
                                           "points")
@@ -131,7 +131,7 @@ def face_splitting_product(phi: np.ndarray, psi: Optional[np.ndarray] = None) ->
     """
     if psi is None:
         # Shallow copy
-        phi = psi
+        psi = phi
 
     assert psi.shape[0] == phi.shape[0], ("Both sets of wave functions should be defined for the same number of grid "
                                           "points")
@@ -139,3 +139,5 @@ def face_splitting_product(phi: np.ndarray, psi: Optional[np.ndarray] = None) ->
     z = psi[:, :, np.newaxis] * phi[:, np.newaxis, :]
     z = z.reshape(n_grid, -1)
     return z
+
+
