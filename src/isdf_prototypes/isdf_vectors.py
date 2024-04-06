@@ -141,3 +141,35 @@ def face_splitting_product(phi: np.ndarray, psi: Optional[np.ndarray] = None) ->
     return z
 
 
+def construct_interpolation_vectors_matrix(phi: np.ndarray,
+                                           interpolation_indices: np.ndarray,
+                                           psi: Optional[np.ndarray]=None) -> np.ndarray:
+    """ Construct interpolation vectors matrix, Theta.
+
+    TODO Add equations
+
+    :param phi: KS states defined for all points on the real-space grid.
+    phi must have the shape (N_grid_points, m KS states)
+    :param interpolation_indices: Grid indices that define interpolation points
+    :param psi: Optional second set of KS states, with shape (N_grid_points, n KS states).
+    Note that m does not need to equal n.
+    :return theta: Interpolation vector matrix, with shape(N_grid_points, N_interpolation_vectors)
+    """
+    if psi is None:
+        # Shallow copy
+        psi = phi
+
+    assert phi.shape == psi.shape, "phi and psi must have the same shape"
+
+    # Theta = P^phi * P^psi * ADD ME * ADD ME
+    theta = (
+             (phi @ phi[interpolation_indices, :].T) *
+             (psi @ psi[interpolation_indices, :].T) *
+             (phi[interpolation_indices, :] @ phi[interpolation_indices, :].T) *
+             (psi[interpolation_indices, :] @ psi[interpolation_indices, :].T)
+             )
+
+    n_grid_points = phi.shape[0]
+    assert theta.shape == (n_grid_points, len(interpolation_indices))
+
+    return theta
