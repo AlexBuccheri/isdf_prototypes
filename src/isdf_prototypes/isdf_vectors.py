@@ -37,8 +37,8 @@ def iteration_implementation_face_splitting_product(phi: np.ndarray, psi: Option
 
     Naive loop-based implementation as a reference.
     Lack of numpy use means no vectorisation (very slow).
-    See wikipedia entry and associated image for a clear description of the algorithm:
-    https://en.wikipedia.org/wiki/Khatri–Rao_product#Face-splitting_product
+    See [wikipedia](https://en.wikipedia.org/wiki/Khatri–Rao_product#Face-splitting_product) entry and associated
+    image for a clear description of the algorithm:
 
     :param phi: KS states defined on real-space grid, expected shape(Ngrid, m)
     where m is the number of KS states.
@@ -69,10 +69,10 @@ def iteration_implementation_face_splitting_product(phi: np.ndarray, psi: Option
 def face_splitting_product_single_loop(phi: np.ndarray, psi: Optional[np.ndarray] = None) -> np.ndarray:
     r""" Face-splitting Product. Create products of KS wave functions on a real-space grid.
 
-    See wikipedia entry and associated image for a clear description of the algorithm:
-    https://en.wikipedia.org/wiki/Khatri–Rao_product#Face-splitting_product
+    See [wikipedia](https://en.wikipedia.org/wiki/Khatri–Rao_product#Face-splitting_product) entry
+    and associated image for a clear description of the algorithm:
 
-    ::math
+    .. math::
 
         \mathbf{C} \bullet \mathbf{D} =
          \left[\begin{array}{l}
@@ -81,10 +81,8 @@ def face_splitting_product_single_loop(phi: np.ndarray, psi: Optional[np.ndarray
            \hline \mathbf{C}_3 \otimes \mathbf{D}_3
          \end{array}\right]
 
-    :param phi: KS states defined on real-space grid, expected shape(Ngrid, m)
-    where m is the number of KS states.
-    :param psi: An optional second set of KS states defined on real-space grid.
-    If psi=None, it is assumed that {phi} = {psi}
+    :param phi: KS states defined on real-space grid, expected shape(Ngrid, m) where m is the number of KS states.
+    :param psi: An optional second set of KS states defined on real-space grid. If psi=None, it is assumed that {phi} = {psi}
     :return: Z of shape(Ngrid, len(psi) * len(phi))
     """
     if psi is None:
@@ -106,10 +104,10 @@ def face_splitting_product_single_loop(phi: np.ndarray, psi: Optional[np.ndarray
 def face_splitting_product(phi: np.ndarray, psi: Optional[np.ndarray] = None) -> np.ndarray:
     r"""Face-splitting Product. Create products of KS wave functions on a real-space grid.
 
-    See wikipedia entry and associated image for a clear description of the algorithm:
-    https://en.wikipedia.org/wiki/Khatri–Rao_product#Face-splitting_product
+    See [wikipedia](https://en.wikipedia.org/wiki/Khatri–Rao_product#Face-splitting_product) entry
+    and associated image for a clear description of the algorithm:
 
-    ::math
+    .. math::
 
         \mathbf{C} \bullet \mathbf{D} =
          \left[\begin{array}{l}
@@ -143,16 +141,19 @@ def face_splitting_product(phi: np.ndarray, psi: Optional[np.ndarray] = None) ->
 
 def construct_interpolation_vectors_matrix(phi: np.ndarray,
                                            interpolation_indices: np.ndarray,
-                                           psi: Optional[np.ndarray]=None) -> np.ndarray:
-    """ Construct interpolation vectors matrix, Theta.
+                                           psi: Optional[np.ndarray] = None) -> np.ndarray:
+    r""" Construct interpolation vectors matrix, \(\Theta\).
 
-    TODO Add equations
+    .. math::
+
+     \Theta &= \left[ Z C^T \right] \odot \left[ C C^T \right]^{-1} \\
+            &= P^\Phi \odot P^\Psi \odot  \left[ \left[ P^\Phi \right]^\prime \odot  \left[P^\Psi \right]^\prime  \right]^{-1}
 
     :param phi: KS states defined for all points on the real-space grid.
-    phi must have the shape (N_grid_points, m KS states)
+                phi must have the shape (N_grid_points, m KS states)
     :param interpolation_indices: Grid indices that define interpolation points
     :param psi: Optional second set of KS states, with shape (N_grid_points, n KS states).
-    Note that m does not need to equal n.
+                Note that m does not need to equal n.
     :return theta: Interpolation vector matrix, with shape(N_grid_points, N_interpolation_vectors)
     """
     if psi is None:
@@ -161,13 +162,14 @@ def construct_interpolation_vectors_matrix(phi: np.ndarray,
 
     assert phi.shape == psi.shape, "phi and psi must have the same shape"
 
-    # Theta = P^phi * P^psi * ADD ME * ADD ME
-    theta = (
-             (phi @ phi[interpolation_indices, :].T) *
-             (psi @ psi[interpolation_indices, :].T) *
-             (phi[interpolation_indices, :] @ phi[interpolation_indices, :].T) *
-             (psi[interpolation_indices, :] @ psi[interpolation_indices, :].T)
-             )
+    # Initialise with Theta = ZC^T
+    theta = (phi @ phi[interpolation_indices, :].T) * (psi @ psi[interpolation_indices, :].T)
+
+    cct = (phi[interpolation_indices, :] @ phi[interpolation_indices, :].T) * (
+           psi[interpolation_indices, :] @ psi[interpolation_indices, :].T)
+
+    # Theta = ZC^T * [CC^T]^{-1}
+    theta *= np.linalg.inv(cct)
 
     n_grid_points = phi.shape[0]
     assert theta.shape == (n_grid_points, len(interpolation_indices))
