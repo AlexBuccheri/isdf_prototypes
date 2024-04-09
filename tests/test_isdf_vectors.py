@@ -93,6 +93,35 @@ def test_zct_expansion(benzene_dft):
 
     assert np.allclose(ref_zct, zct), "separable formulation consistent with matrix-matrix product"
 
+    # Same deal with (CC^T)
+    ref_cct = c @ c.T
+    assert ref_cct.shape == (n_interp, n_interp)
+
+    # Separable formulation
+    cct = (wfs[indices, :] @ wfs[indices, :].T) * (wfs[indices, :] @ wfs[indices, :].T)
+    assert np.allclose(ref_cct, cct), "separable formulation consistent with matrix-matrix product"
+
+    # Check the condition number of cct - This looks extremely high
+    # condition_num = np.linalg.cond(cct)
+
+    # Compare inverse to pseudo-inverse
+    inv_cct = np.linalg.inv(cct)
+    pseudo_inv_cct = np.linalg.pinv(cct)
+
+    # The matrix elements are so large that using abs tolerances with default relative tolerance
+    # passes. This will fail if rtol=1.e-6 or smaller
+    assert np.allclose(inv_cct, pseudo_inv_cct, atol=1.e-12, rtol=1.e-5)
+
+    # For example
+    assert np.isclose(np.amax(inv_cct),        67184944.06626159)
+    assert np.isclose(np.amax(pseudo_inv_cct), 67184944.09559071)
+
+    assert np.isclose(np.amin(inv_cct),        -57156109.955243066)
+    assert np.isclose(np.amin(pseudo_inv_cct), -57156109.98355138)
+
+
+
+
 
 
 # SKLearn routines continuous centroids, rather than centroids bound to the discrete grid
