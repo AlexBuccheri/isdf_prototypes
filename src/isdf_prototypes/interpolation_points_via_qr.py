@@ -5,7 +5,6 @@ from typing import Optional
 import numpy as np
 import scipy
 
-# Note, this will create a circular dependency => move this op
 from isdf_prototypes.math_ops import face_splitting_product
 
 
