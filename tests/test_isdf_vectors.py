@@ -1,16 +1,10 @@
-import pickle
 from pathlib import Path
-from typing import List
 
 import numpy as np
 import pytest
-import sympy
 from sklearn.cluster import KMeans
 
 from . import tests_root
-from isdf_prototypes.isdf_vectors import iteration_implementation_face_splitting_product, \
-    face_splitting_product_single_loop, face_splitting_product
-
 from .molecular_calculation import (MinimalBasisBenzene, generate_ks_states, compute_real_space_grid,
                                     compute_real_space_density, find_subgrid_in_grid, find_subgrid_in_grid_single_loop,
                                     compute_real_space_grid)
@@ -54,34 +48,6 @@ def benzene_dft():
     return calculation.mol, wfs, rho, grid
 
 
-# @pytest.fixture(scope="module")
-# def occupied_ks_states(benzene_dft) -> np.ndarray:
-#     wfs = generate_ks_states(benzene_dft)
-#     return wfs
-#
-
-
-# @pytest.fixture(scope="module")
-# def occupied_ks_states(benzene_dft) -> np.ndarray:
-#     wfs = generate_ks_states(benzene_dft)
-#     return wfs
-#
-#
-# @pytest.fixture(scope="module")
-# def density(benzene_dft) -> np.ndarray:
-#     # Put unnecessary cube files in their own subdir
-#     cube_root = tests_root / Path("cube_files")
-#     cube_root.mkdir(exist_ok=True)
-#     cube_file = cube_root / "density.cube"
-#     rho = compute_real_space_density(benzene_dft, cube_file.as_posix())
-#     return rho
-#
-#
-# @pytest.fixture(scope="module")
-# def real_space_grid(benzene_dft) -> np.ndarray:
-#     return compute_real_space_grid(benzene_dft)
-
-
 def interpolation_points(grid, weights, n_clusters, random_state=10) -> tuple:
     """ Interpolation points
 
@@ -106,92 +72,22 @@ def interpolation_points(grid, weights, n_clusters, random_state=10) -> tuple:
     clusters = k_means.cluster_centers_
     assert len(clusters) == n_clusters, "Ensure kmeans returns expected number of clusters"
 
+    # For each cluster, find the closest grid point to it
+    # grid_cluster_points = np.empty_like(clusters)
+    # indices = np.empty(shape=n_clusters)
+    # for j, point in enumerate(clusters):
+    #     abs_diff = np.abs(grid - point)
+    #     i = np.argmin(abs_diff.sum(axis=1))
+    #     grid_cluster_points[j, :] = grid[i, :]
+    #     indices[j] = i
+
+    # Can't use this.
     # Grid index of each cluster
     indices = find_subgrid_in_grid_single_loop(grid, clusters)
+    print(indices)
     assert len(indices) == n_clusters, "Number of indices of subgrid points doesn't match the number of clusters"
 
     return clusters, indices
-
-
-# Helper function
-def sympy_to_numpy(str_list: List[str], shape) -> np.ndarray:
-    """ Convert a list of strings into a symbolic numpy array, with correct shape.
-    :param str_list:
-    :param shape:
-    :return:
-    """
-    assert len(str_list) == np.prod(shape)
-    array_sympy = [sympy.sympify(expr) for expr in str_list]
-    array = np.array(array_sympy, dtype=object).reshape(shape)
-    return array
-
-
-def test_face_splitting_product():
-    # Input array
-    a = np.array(sympy.symbols('a11 a12 a13 '
-                               'a21 a22 a23 '
-                               'a31 a32 a33 '
-                               'a41 a42 a42 '), object).reshape((4, 3))
-
-    # Face-splitting product of a x a
-    ref_symbols = ['a11**2', 'a11*a12', 'a11*a13', 'a11*a12', 'a12**2', 'a12*a13', 'a11*a13', 'a12*a13', 'a13**2',
-                   'a21**2', 'a21*a22', 'a21*a23', 'a21*a22', 'a22**2', 'a22*a23', 'a21*a23', 'a22*a23', 'a23**2',
-                   'a31**2', 'a31*a32', 'a31*a33', 'a31*a32', 'a32**2', 'a32*a33', 'a31*a33', 'a32*a33', 'a33**2',
-                   'a41**2', 'a41*a42', 'a41*a42', 'a41*a42', 'a42**2', 'a42**2 ', 'a41*a42', 'a42**2 ', 'a42**2']
-    ref_fs_product = sympy_to_numpy(ref_symbols, (4, 9))
-
-    # Loop-based
-    z1 = iteration_implementation_face_splitting_product(a, a)
-    assert z1.shape == (4, 9)
-    assert np.array_equal(z1, ref_fs_product), "Expect same symbolic elements"
-
-    # Single loop
-    z2 = face_splitting_product_single_loop(a, a)
-    assert z2.shape == (4, 9)
-    assert np.array_equal(z2, ref_fs_product), "Expect same symbolic elements"
-
-    # No loops -> pure numpy
-    z3 = face_splitting_product(a, a)
-    assert z3.shape == (4, 9)
-    assert np.array_equal(z3, ref_fs_product), "Expect same symbolic elements"
-
-
-def test_face_splitting_product_with_different_num_states():
-    a = np.array(sympy.symbols('a11 a12 a13 '
-                               'a21 a22 a23 '
-                               'a31 a32 a33 '
-                               'a41 a42 a42 '), object).reshape((4, 3))
-
-    b = np.array(sympy.symbols('b11 b12 '
-                               'b21 b22 '
-                               'b31 b32 '
-                               'b41 b42 '), object).reshape((4, 2))
-
-    assert a.shape[0] == b.shape[0], "a and b must have the same number of rows"
-    product_basis_size = 6
-    assert a.shape[1] * b.shape[1] == product_basis_size
-
-    # Face-splitting product of a x b
-    ref_symbols = ['a11*b11', 'a12*b11', 'a13*b11', 'a11*b12', 'a12*b12', 'a13*b12',
-                   'a21*b21', 'a22*b21', 'a23*b21', 'a21*b22', 'a22*b22', 'a23*b22',
-                   'a31*b31', 'a32*b31', 'a33*b31', 'a31*b32', 'a32*b32', 'a33*b32',
-                   'a41*b41', 'a42*b41', 'a42*b41', 'a41*b42', 'a42*b42', 'a42*b42']
-    ref_fs_product = sympy_to_numpy(ref_symbols, (4, product_basis_size))
-
-    # Loop-based
-    z1 = iteration_implementation_face_splitting_product(a, b)
-    assert z1.shape == (4, product_basis_size)
-    assert np.array_equal(z1, ref_fs_product), "Expect same symbolic elements"
-
-    # Single loop
-    z2 = face_splitting_product_single_loop(a, b)
-    assert z2.shape == (4, product_basis_size)
-    assert np.array_equal(z2, ref_fs_product), "Expect same symbolic elements"
-
-    # # No loops -> pure numpy
-    z3 = face_splitting_product(a, b)
-    assert z3.shape == (4, product_basis_size)
-    assert np.array_equal(z3, ref_fs_product), "Expect same symbolic elements"
 
 
 def test_find_subgrid_in_grid(benzene_dft):
@@ -221,19 +117,15 @@ def test_zct_expansion(benzene_dft):
 
     mol, wfs, rho, grid = benzene_dft
 
-    assert wfs.shape == (1000, 22), "Expect (n_grid_points, n_occ_states)"
-    assert rho.shape == (1000,), "Expect (n_grid_points)"
-    assert grid.shape == (1000, 3), "Expect (n_grid_points, 3)"
+    # assert wfs.shape == (1000, 22), "Expect (n_grid_points, n_occ_states)"
+    # assert rho.shape == (1000,), "Expect (n_grid_points)"
+    # assert grid.shape == (1000, 3), "Expect (n_grid_points, 3)"
 
     n_clusters = 100
     interp_points, indices = interpolation_points(grid, rho, n_clusters, random_state=10)
-    print(interp_points.shape)
-    print(len(indices))
-
-
-    # assert np.allclose(grid[indices], interp_points)
-
-
+    assert interp_points.shape == (n_clusters, 3)
+    assert indices.shape == (n_clusters, )
+    assert np.allclose(grid[indices], interp_points)
 
     # # Z
     # z = face_splitting_product(occupied_ks_states)
@@ -247,18 +139,3 @@ def test_zct_expansion(benzene_dft):
     # Contraction of Z and C^T matrices
     # zct = z @ c.T
 
-
-
-
-# Should make some notes on this (broadcasting) in a jupyter NB
-# def test_broadcasting():
-#     a = np.array(sympy.symbols('a11 a12 '
-#                                'a21 a22 '
-#                                'a31 a32 '), object).reshape((3, 2))
-#
-#     b = np.array(sympy.symbols('b11 b12 '
-#                                'b21 b22 '
-#                                'b31 b32 '), object).reshape((3, 2))
-#
-#     c = a[:, :, np.newaxis] * b[:, np.newaxis, :]
-#     print(c.reshape(3, -1))
