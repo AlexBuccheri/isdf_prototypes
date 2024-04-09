@@ -112,24 +112,3 @@ def generate_ks_states(calc: PYSCFCalc) -> np.ndarray:
         wfs[:, i] = molecular_orbital.reshape(-1)
 
     return wfs
-
-
-def find_subgrid_in_grid(grid, subgrid) -> np.ndarray:
-    """
-
-    :return:
-    """
-    return np.where(np.allclose(grid[:, None, :], subgrid).all(axis=-1))[1]
-
-
-def find_subgrid_in_grid_single_loop(grid, subgrid) -> np.ndarray:
-    """
-
-    :return:
-    """
-    all_indices = []
-    for i in range(len(subgrid)):
-        indices = np.where(np.all(np.abs(grid - subgrid[i, :]) < 1.e-9,  axis=1))[0]
-        all_indices.append(indices)
-    indices = np.concatenate(all_indices)
-    return indices
