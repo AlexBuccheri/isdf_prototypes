@@ -26,7 +26,8 @@ import numpy as np
 
 def construct_interpolation_vectors_matrix(phi: np.ndarray,
                                            interpolation_indices: np.ndarray,
-                                           psi: Optional[np.ndarray] = None) -> np.ndarray:
+                                           psi: Optional[np.ndarray] = None,
+                                           pseudo_inv=False) -> np.ndarray:
     r""" Construct interpolation vectors matrix, \(\Theta\).
 
     .. math::
@@ -39,6 +40,7 @@ def construct_interpolation_vectors_matrix(phi: np.ndarray,
     :param interpolation_indices: Grid indices that define interpolation points
     :param psi: Optional second set of KS states, with shape (N_grid_points, n KS states).
                 Note that m does not need to equal n.
+    :param pseudo_inv: Optionally use SVD to perform the pseudo-inverse
     :return theta: Interpolation vector matrix, with shape(N_grid_points, N_interpolation_vectors)
     """
     if psi is None:
@@ -46,15 +48,20 @@ def construct_interpolation_vectors_matrix(phi: np.ndarray,
         psi = phi
 
     assert phi.shape == psi.shape, "phi and psi must have the same shape"
+    n_inter = len(interpolation_indices)
 
     # Initialise with Theta = ZC^T
     theta = (phi @ phi[interpolation_indices, :].T) * (psi @ psi[interpolation_indices, :].T)
 
     cct = (phi[interpolation_indices, :] @ phi[interpolation_indices, :].T) * (
-           psi[interpolation_indices, :] @ psi[interpolation_indices, :].T)
+            psi[interpolation_indices, :] @ psi[interpolation_indices, :].T)
+    assert cct.shape == (n_inter, n_inter)
 
     # Theta = ZC^T * [CC^T]^{-1}
-    theta *= np.linalg.inv(cct)
+    if pseudo_inv:
+        theta = theta @ np.linalg.pinv(cct)
+    else:
+        theta = theta @ np.linalg.inv(cct)
 
     n_grid_points = phi.shape[0]
     assert theta.shape == (n_grid_points, len(interpolation_indices))
