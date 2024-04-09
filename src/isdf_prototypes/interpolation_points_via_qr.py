@@ -40,7 +40,7 @@ def randomly_sample_product_matrix(phi, n_interp: int, psi: Optional = None, ran
     n_grid_points, m = phi.shape
     # Number of KS states for {psi}
     n = psi.shape[1]
-    p = np.round(np.sqrt(n_interp))
+    p = int(np.round(np.sqrt(n_interp)))
 
     G1 = np.random.default_rng(seed=random_seed).normal(0.0, 1.0, size=(m, p))
     A = phi @ G1
@@ -48,14 +48,14 @@ def randomly_sample_product_matrix(phi, n_interp: int, psi: Optional = None, ran
 
     G2 = np.random.default_rng(seed=random_seed).normal(0.0, 1.0, size=(n, p))
     B = psi @ G2
-    assert A.shape == (n_grid_points, p)
+    assert B.shape == (n_grid_points, p)
 
     z_subspace = face_splitting_product(A, B)
-    assert A.z_subspace == (n_grid_points, p * p)
+    assert z_subspace.shape == (n_grid_points, p * p)
     return z_subspace
 
 
-def interpolation_points_via_qrpivot(z_subspace):
+def interpolation_points_via_qrpivot(z_subspace) -> np.ndarray:
     """ Find interpolation points from a subspace of the pair-product matrix,
     using QR decomposition with pivoting.
 
@@ -64,11 +64,15 @@ def interpolation_points_via_qrpivot(z_subspace):
     * https://www.quantstart.com/articles/QR-Decomposition-with-Python-and-NumPy/
 
     :param z_subspace: Sub-sampled pair-product matrix, with shape(n_grid_points, n_interp)
-    :return:
+    :return: pivot: Sorted interpolation point indices. These determine the rows of
+    the product-basis matrix, Z, to be used as interpolating points. Note, n_rows should
+    be the same for Z and the z_subspace.
     """
     n_interp = z_subspace.shape[1]
-    # TODO Test this to see what form pivot is returned in
-    R_and_pivot_matrices = scipy.linalg.qr(z_subspace, mode='r', pivoting=True)
-    # Interpolation points are given by the first n_interp columns of pivot
+    # Do not return Q
+    mode = 'r'
+    R_and_pivot_matrices = scipy.linalg.qr(z_subspace.T, mode=mode, pivoting=True)
     R, pivot = R_and_pivot_matrices
-    print(R)
+    # Interpolation points are given by the first n_interp values of pivot
+    pivot = pivot[0:n_interp]
+    return np.sort(pivot)
