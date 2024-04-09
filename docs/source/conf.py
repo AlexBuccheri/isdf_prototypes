@@ -9,7 +9,10 @@ copyright = '2024, Alexander Buccheri'
 author = 'Alexander Buccheri'
 
 # General configuration
-extensions = ["sphinx.ext.autodoc", "sphinx.ext.viewcode", "sphinx.ext.todo"]
+extensions = ["sphinx.ext.autodoc",
+              "sphinx.ext.viewcode",
+              "sphinx.ext.todo",
+              'sphinx.ext.mathjax']
 
 templates_path = ['_templates']
 exclude_patterns = []
