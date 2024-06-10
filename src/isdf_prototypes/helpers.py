@@ -255,3 +255,36 @@ def compute_approximate_product_matrix(wfs, interpolation_indices) -> np.ndarray
     assert z_isdf.shape == (total_grid_size, n_products)
 
     return z_isdf
+
+
+def write_grid_func_to_binary(fname: str, data: np.ndarray, for_fortran=True):
+    """ Write a function defined on a grid to binary
+
+    Single line of header is in real-text, for pre-parsing and
+    the rest of the file is a binary stream.
+
+    Example Usage:
+        write_grid_func_to_binary("grid.bin", grid_points)
+        write_grid_func_to_binary("wfs.bin", wfs)
+        write_grid_func_to_binary("density.bin", rho)
+
+    :param data: Function defined on a discrete grid
+    :param for_fortran: Optional, transposes the shape written to file
+    such that the array parses correctly in fortran
+    ```fortran
+    read(unit, *) ndim, ntotal
+    allocate(grid(ndim, ntotal))
+    ```
+    :return:
+    """
+    # Header defines the transpose of the shape
+    if for_fortran:
+        s = data.shape[::-1]
+    else:
+        s = data.shape
+
+    header = " ".join(str(x) for x in s) + '\n'
+
+    with open(fname, 'wb') as fid:
+        fid.write(header.encode('ascii'))
+        fid.write(data.tobytes())
