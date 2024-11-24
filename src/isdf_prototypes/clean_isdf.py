@@ -273,7 +273,7 @@ def find_interpolation_points_factory(interpolation_method: str) -> Callable:
 
         def find_interpolation_points(n_int: int, **kwargs):
             wfs = kwargs['wfs']
-            z_tilde = sample_z_with_gaussian_matrix(wfs, n_int, random_seed=42)
+            z_tilde = sample_z_with_gaussian_matrix(wfs, n_int) # random_seed=42
             indices = interpolation_points_via_qrpivot(z_tilde, n_int)
             return indices
 
