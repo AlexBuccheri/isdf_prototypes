@@ -3,12 +3,12 @@
 * QR decomposition with column pivoting
 * Weighted k-means clustering
 """
-
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 import numpy as np
 from ordered_set import OrderedSet
 from scipy.spatial.distance import cdist
+
 
 cluster_type = List[List[int]]
 
@@ -83,9 +83,9 @@ def assign_points_to_centroids(grid_points: np.ndarray, centroids: np.ndarray) -
 
 
 def update_centroids(grid_points, f_weight, clusters: cluster_type) -> np.ndarray:
-    """Compute a new set of initial_centroids
+    """Compute a new set of centroids
 
-    We have as many clusters as we do initial_centroids
+    We have as many clusters as we do centroids
 
     :param grid_points: Grid
     :param f_weight: Weight function
@@ -261,3 +261,5 @@ def weighted_kmeans(
         centroids = updated_centroids
 
     return centroids, t
+
+

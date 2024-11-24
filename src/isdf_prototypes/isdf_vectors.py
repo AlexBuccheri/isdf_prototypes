@@ -22,6 +22,7 @@
 from typing import Optional
 
 import numpy as np
+import scipy
 
 
 def construct_interpolation_vectors_matrix(phi: np.ndarray,
@@ -56,12 +57,19 @@ def construct_interpolation_vectors_matrix(phi: np.ndarray,
     cct = (phi[interpolation_indices, :] @ phi[interpolation_indices, :].T) * (
             psi[interpolation_indices, :] @ psi[interpolation_indices, :].T)
     assert cct.shape == (n_inter, n_inter)
+    assert scipy.linalg.issymmetric(cct), 'cct should be symmetric'
 
     # Theta = ZC^T * [CC^T]^{-1}
+    # where one is forced to relax the default rtol
     if pseudo_inv:
-        theta = theta @ np.linalg.pinv(cct)
+        inv_cct = np.linalg.pinv(cct)
+        assert scipy.linalg.issymmetric(inv_cct, rtol=1e-04), 'inv_cct computed with pinv should be symmetric'
+
     else:
-        theta = theta @ np.linalg.inv(cct)
+        inv_cct = np.linalg.inv(cct)
+        assert scipy.linalg.issymmetric(inv_cct, rtol=1e-04), 'inv_cct computed with inv should be symmetric'
+
+    theta = theta @ inv_cct
 
     n_grid_points = phi.shape[0]
     assert theta.shape == (n_grid_points, len(interpolation_indices))

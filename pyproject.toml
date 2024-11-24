@@ -16,7 +16,8 @@ dependencies = [
   "py3Dmol>=2.1.0",
   "pyscf==2.5.0",
   "rdkit>=2023.9.5",
-  "scipy>=1.10.0"
+  "scipy>=1.10.0",
+  "networkx"
 ]
 
 [project.urls]
