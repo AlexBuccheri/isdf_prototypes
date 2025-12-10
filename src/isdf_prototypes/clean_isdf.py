@@ -60,6 +60,9 @@ def benzene_from_pyscf(output_root: Path, points) -> dict:
     n_total = np.prod(points)
     nx_ny_nz = dict(zip(['nx', 'ny', 'nz'], points))
 
+    # Occupied states
+    n_occ = pyscf_occupied_mos(mf)
+
     # Generate the real-space grid
     cube_grid = cubegen.Cube(mol, **nx_ny_nz)
     # grid_points = cube_grid.get_coords()
@@ -79,7 +82,7 @@ def benzene_from_pyscf(output_root: Path, points) -> dict:
     rho = cubegen.density(mol, cube_file.as_posix(), dm, **nx_ny_nz)
     rho = rho.reshape(-1)
 
-    return {'wfs': wfs, 'rho': rho, 'cube_grid': cube_grid}
+    return {'wfs': wfs, 'rho': rho, 'cube_grid': cube_grid, 'n_occ': n_occ}
 
 
 def orthogonalised_gaussian_matrix(n_states: int, n_int: int, apply_checks=True):
